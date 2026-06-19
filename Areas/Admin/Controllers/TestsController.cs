@@ -1,154 +1,135 @@
-using CareerGuidance.Data;
-using CareerGuidance.Helpers;
 using CareerGuidance.Models;
-using CareerGuidance.ViewModels;
+using CareerGuidance.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace CareerGuidance.Areas.Admin.Controllers;
 
-public class TestsController : BaseAdminController
+[Area("Admin")]
+[Authorize(Roles = "Admin")]
+public class TestsController : Controller
 {
-    private readonly AppDbContext _context;
-    private const int PageSize = 10;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<TestsController> _logger;
 
-    public TestsController(AppDbContext context)
+    public TestsController(IUnitOfWork unitOfWork, ILogger<TestsController> logger)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
+        _logger = logger;
     }
 
-    public async Task<IActionResult> Index(TestFilterViewModel filter, int? pageIndex)
+    public async Task<IActionResult> Index()
     {
-        var query = _context.Tests.Where(t => t.Status != 3);
-
-        if (!string.IsNullOrWhiteSpace(filter.Keyword))
+        try
         {
-            query = query.Where(t =>
-                t.Title.Contains(filter.Keyword) ||
-                (t.Description != null && t.Description.Contains(filter.Keyword)));
+            var tests = await _unitOfWork.Tests.GetAllAsync();
+            return View(tests);
         }
-
-        if (filter.Status.HasValue)
+        catch (Exception ex)
         {
-            query = query.Where(t => t.Status == filter.Status.Value);
+            _logger.LogError(ex, "Error loading tests");
+            return View(new List<AssessmentTest>());
         }
-
-        query = QueryFilterHelper.ApplyDateRange(query, filter.DateRange);
-
-        query = filter.SortOrder switch
-        {
-            "title_desc" => query.OrderByDescending(t => t.Title),
-            "date_asc" => query.OrderBy(t => t.CreatedAt),
-            "date_desc" => query.OrderByDescending(t => t.CreatedAt),
-            _ => query.OrderBy(t => t.Title)
-        };
-
-        filter.Tests = await PaginatedList<AssessmentTest>.CreateAsync(query.AsNoTracking(), pageIndex ?? 1, PageSize);
-        return View(filter);
     }
 
     public IActionResult Create()
     {
-        return View(new TestFormViewModel());
+        return View();
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(TestFormViewModel model)
+    public async Task<IActionResult> Create(AssessmentTest test)
     {
-        if (!ModelState.IsValid)
+        try
         {
-            return View(model);
+            if (!ModelState.IsValid)
+                return View(test);
+
+            test.CreatedAt = DateTime.UtcNow;
+            test.Status = 1;
+            await _unitOfWork.Tests.AddAsync(test);
+
+            return RedirectToAction(nameof(Index)).WithSuccess("Test created successfully");
         }
-
-        var entity = new AssessmentTest
+        catch (Exception ex)
         {
-            Title = model.Title,
-            Description = model.Description,
-            Status = model.Status,
-            CreatedBy = User.Identity?.Name ?? "Admin"
-        };
-
-        _context.Tests.Add(entity);
-        await _context.SaveChangesAsync();
-        TempData["Success"] = "Thêm bài test thành công.";
-        return RedirectToAction(nameof(Index));
+            _logger.LogError(ex, "Error creating test");
+            ModelState.AddModelError(string.Empty, "Error creating test");
+            return View(test);
+        }
     }
 
-    public async Task<IActionResult> Edit(int id)
+    public async Task<IActionResult> Edit(int? id)
     {
-        var entity = await _context.Tests.FindAsync(id);
-        if (entity == null)
-        {
+        if (!id.HasValue)
             return NotFound();
-        }
 
-        return View(new TestFormViewModel
-        {
-            Id = entity.Id,
-            Title = entity.Title,
-            Description = entity.Description,
-            Status = entity.Status
-        });
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(TestFormViewModel model)
-    {
-        if (!ModelState.IsValid)
-        {
-            return View(model);
-        }
-
-        var entity = await _context.Tests.FindAsync(model.Id);
-        if (entity == null)
-        {
+        var test = await _unitOfWork.Tests.GetByIdAsync(id.Value);
+        if (test == null)
             return NotFound();
-        }
 
-        entity.Title = model.Title;
-        entity.Description = model.Description;
-        entity.Status = model.Status;
-        entity.UpdatedAt = DateTime.UtcNow;
-        entity.UpdatedBy = User.Identity?.Name ?? "Admin";
-
-        await _context.SaveChangesAsync();
-        TempData["Success"] = "Cập nhật bài test thành công.";
-        return RedirectToAction(nameof(Index));
+        return View(test);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Edit(int id, AssessmentTest test)
     {
-        var entity = await _context.Tests.FindAsync(id);
-        if (entity != null)
-        {
-            entity.Status = 3;
-            entity.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-        }
+        if (id != test.Id)
+            return NotFound();
 
-        return RedirectToAction(nameof(Index));
+        try
+        {
+            if (!ModelState.IsValid)
+                return View(test);
+
+            test.UpdatedAt = DateTime.UtcNow;
+            _unitOfWork.Tests.Update(test);
+            await _unitOfWork.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index)).WithSuccess("Test updated successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating test");
+            ModelState.AddModelError(string.Empty, "Error updating test");
+            return View(test);
+        }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> DeleteSelected(List<int> ids)
+    public async Task<IActionResult> Delete(int? id)
     {
-        if (ids == null || ids.Count == 0)
-        {
-            return Json(new { success = false, message = "Không có mục nào được chọn." });
-        }
+        if (!id.HasValue)
+            return NotFound();
 
-        var items = await _context.Tests.Where(t => ids.Contains(t.Id)).ToListAsync();
-        foreach (var item in items)
-        {
-            item.Status = 3;
-            item.UpdatedAt = DateTime.UtcNow;
-        }
+        var test = await _unitOfWork.Tests.GetByIdAsync(id.Value);
+        if (test == null)
+            return NotFound();
 
-        await _context.SaveChangesAsync();
-        return Json(new { success = true, message = $"Đã xóa mềm {items.Count} bài test." });
+        return View(test);
+    }
+
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        try
+        {
+            var test = await _unitOfWork.Tests.GetByIdAsync(id);
+            if (test != null)
+            {
+                test.Status = 0;
+                _unitOfWork.Tests.Update(test);
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index)).WithSuccess("Test deleted successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting test");
+            return RedirectToAction(nameof(Index)).WithError("Error deleting test");
+        }
     }
 }
