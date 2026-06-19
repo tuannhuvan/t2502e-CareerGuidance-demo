@@ -1,0 +1,59 @@
+@model CareerGuidance.Models.CareerPath
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8">
+            <h1 class="h2 mb-3">@Model.Title</h1>
+
+            <div class="mb-4">
+                @Html.Raw(Model.Content)
+            </div>
+
+            <hr>
+
+            <div class="mt-4">
+                <h3>Learning Resources</h3>
+                <div id="resourcesList">
+                    <!-- Resources will be loaded via JavaScript -->
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h3>Job Opportunities</h3>
+                <div id="jobsList">
+                    <!-- Jobs will be loaded via JavaScript -->
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Career Path Info</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Category:</strong> <span id="categoryName">Loading...</span></p>
+                    <a href="#" class="btn btn-primary w-100 mt-3" onclick="setGoal(@Model.Id)">Set as Goal</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            var careerPathId = @Model.Id;
+            loadResources(careerPathId);
+            loadJobs(careerPathId);
+        });
+
+        function setGoal(careerPathId) {
+            // This will open a modal or navigate to set goal page
+            console.log('Setting goal for career path:', careerPathId);
+        }
+    </script>
+}

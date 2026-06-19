@@ -1,0 +1,44 @@
+@model IEnumerable<CareerGuidance.Models.CareerPath>
+
+@{
+    ViewData["Title"] = "Explore Career Paths";
+}
+
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1 class="h2 mb-2">Career Paths</h1>
+            <p class="text-muted">Explore different career options and find the right path for you</p>
+        </div>
+    </div>
+
+    <div class="row">
+        @if (Model.Any())
+        {
+            @foreach (var path in Model)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">@path.Title</h5>
+                            <div class="card-text">
+                                @Html.Raw(path.Content)
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="@Url.Action("Details", new { id = path.Id })" class="btn btn-primary w-100">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-md-12">
+                <div class="alert alert-info" role="alert">
+                    No career paths available at the moment.
+                </div>
+            </div>
+        }
+    </div>
+</div>

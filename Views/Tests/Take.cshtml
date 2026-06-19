@@ -1,0 +1,55 @@
+@model CareerGuidance.Models.AssessmentTest
+
+@{
+    ViewData["Title"] = $"Take Test: {Model.Title}";
+}
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="h2 mb-2">@Model.Title</h1>
+            <p class="text-muted">@Model.Description</p>
+            <hr>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <form id="testForm" method="post">
+                <input type="hidden" name="testId" value="@Model.Id">
+                <input type="hidden" id="resultId" name="resultId" value="">
+
+                <div id="questionsContainer">
+                    <!-- Questions will be loaded here via JavaScript -->
+                </div>
+
+                <div class="mt-4">
+                    <button type="button" class="btn btn-primary" id="submitBtn" onclick="submitTest()">Submit Test</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Test Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Test:</strong> @Model.Title</p>
+                    <p><strong>Status:</strong> <span class="badge bg-success">In Progress</span></p>
+                    <div id="timer" class="text-muted">Time remaining: <span id="timeLeft">--:--</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/test-taker.js"></script>
+    <script>
+        $(document).ready(function() {
+            var testId = @Model.Id;
+            loadTestQuestions(testId);
+        });
+    </script>
+}

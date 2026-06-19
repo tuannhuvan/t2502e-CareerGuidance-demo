@@ -1,0 +1,51 @@
+@model IEnumerable<CareerGuidance.Models.AssessmentTest>
+
+@{
+    ViewData["Title"] = "Available Tests";
+}
+
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1 class="h2 mb-2">Assessment Tests</h1>
+            <p class="text-muted">Choose a test to evaluate your career potential</p>
+        </div>
+    </div>
+
+    <div class="row">
+        @if (Model.Any())
+        {
+            @foreach (var test in Model)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">@test.Title</h5>
+                            <p class="card-text">@test.Description</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="#" class="btn btn-primary w-100" data-test-id="@test.Id" onclick="startTest(@test.Id)">Start Test</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-md-12">
+                <div class="alert alert-info" role="alert">
+                    No tests available at the moment. Please check back later.
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function startTest(testId) {
+            // This will be implemented with JavaScript to call the API
+            window.location.href = `/Student/Tests/Take?testId=${testId}`;
+        }
+    </script>
+}
