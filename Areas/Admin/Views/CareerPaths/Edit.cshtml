@@ -1,13 +1,13 @@
-@model CareerGuidance.Models.AssessmentTest
+@model CareerGuidance.Models.CareerPath
 
 @{
-    ViewData["Title"] = "Edit Test";
+    ViewData["Title"] = "Edit Career Path";
 }
 
 <div class="container py-4">
     <div class="row">
         <div class="col-md-8 offset-md-2">
-            <h1 class="h3 mb-4">Edit Test</h1>
+            <h1 class="h3 mb-4">Edit Career Path</h1>
 
             <form asp-action="Edit" method="post">
                 <input type="hidden" asp-for="Id">
@@ -15,15 +15,22 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="mb-3">
-                            <label asp-for="Title" class="form-label">Test Title</label>
+                            <label asp-for="Title" class="form-label">Career Path Title</label>
                             <input asp-for="Title" class="form-control">
                             <span asp-validation-for="Title" class="text-danger"></span>
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="Description" class="form-label">Description</label>
-                            <textarea asp-for="Description" class="form-control" rows="4"></textarea>
-                            <span asp-validation-for="Description" class="text-danger"></span>
+                            <label asp-for="CategoryId" class="form-label">Category</label>
+                            <select asp-for="CategoryId" class="form-control" asp-items="ViewBag.Categories">
+                            </select>
+                            <span asp-validation-for="CategoryId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Content" class="form-label">Content (HTML)</label>
+                            <textarea asp-for="Content" class="form-control" rows="6"></textarea>
+                            <span asp-validation-for="Content" class="text-danger"></span>
                         </div>
                     </div>
                     <div class="card-footer bg-light d-flex gap-2">

@@ -1,127 +1,135 @@
-using CareerGuidance.Data;
-using CareerGuidance.Helpers;
 using CareerGuidance.Models;
-using CareerGuidance.ViewModels;
+using CareerGuidance.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace CareerGuidance.Areas.Admin.Controllers;
 
-public class CategoriesController : BaseAdminController
+[Area("Admin")]
+[Authorize(Roles = "Admin")]
+public class CategoriesController : Controller
 {
-    private readonly AppDbContext _context;
-    private const int PageSize = 10;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<CategoriesController> _logger;
 
-    public CategoriesController(AppDbContext context)
+    public CategoriesController(IUnitOfWork unitOfWork, ILogger<CategoriesController> logger)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
+        _logger = logger;
     }
 
-    public async Task<IActionResult> Index(CategoryFilterViewModel filter, int? pageIndex)
+    public async Task<IActionResult> Index()
     {
-        var query = _context.Categories.Where(c => c.Status != 3);
-
-        if (!string.IsNullOrWhiteSpace(filter.Keyword))
+        try
         {
-            query = query.Where(c =>
-                c.Name.Contains(filter.Keyword) ||
-                (c.Description != null && c.Description.Contains(filter.Keyword)));
+            var categories = await _unitOfWork.Categories.GetAllAsync();
+            return View(categories);
         }
-
-        query = QueryFilterHelper.ApplyDateRange(query, filter.DateRange);
-
-        query = filter.SortOrder switch
+        catch (Exception ex)
         {
-            "name_desc" => query.OrderByDescending(c => c.Name),
-            "date_desc" => query.OrderByDescending(c => c.CreatedAt),
-            _ => query.OrderBy(c => c.Name)
-        };
-
-        filter.Categories = await PaginatedList<Category>.CreateAsync(query.AsNoTracking(), pageIndex ?? 1, PageSize);
-        return View(filter);
+            _logger.LogError(ex, "Error loading categories");
+            return View(new List<Category>());
+        }
     }
 
-    public IActionResult Create() => View(new CategoryFormViewModel());
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CategoryFormViewModel model)
+    public IActionResult Create()
     {
-        if (!ModelState.IsValid)
-        {
-            return View(model);
-        }
-
-        _context.Categories.Add(new Category
-        {
-            Name = model.Name,
-            Description = model.Description,
-            Status = model.Status,
-            CreatedBy = User.Identity?.Name ?? "Admin"
-        });
-        await _context.SaveChangesAsync();
-        TempData["Success"] = "Thêm danh mục thành công.";
-        return RedirectToAction(nameof(Index));
-    }
-
-    public async Task<IActionResult> Edit(int id)
-    {
-        var entity = await _context.Categories.FindAsync(id);
-        if (entity == null)
-        {
-            return NotFound();
-        }
-
-        return View(new CategoryFormViewModel
-        {
-            Id = entity.Id,
-            Name = entity.Name,
-            Description = entity.Description,
-            Status = entity.Status
-        });
+        return View();
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(CategoryFormViewModel model)
+    public async Task<IActionResult> Create(Category category)
     {
-        if (!ModelState.IsValid)
+        try
         {
-            return View(model);
-        }
+            if (!ModelState.IsValid)
+                return View(category);
 
-        var entity = await _context.Categories.FindAsync(model.Id);
-        if (entity == null)
+            category.CreatedAt = DateTime.UtcNow;
+            category.Status = 1;
+            await _unitOfWork.Categories.AddAsync(category);
+
+            return RedirectToAction(nameof(Index)).WithSuccess("Category created successfully");
+        }
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error creating category");
+            ModelState.AddModelError(string.Empty, "Error creating category");
+            return View(category);
+        }
+    }
+
+    public async Task<IActionResult> Edit(int? id)
+    {
+        if (!id.HasValue)
             return NotFound();
-        }
 
-        entity.Name = model.Name;
-        entity.Description = model.Description;
-        entity.Status = model.Status;
-        entity.UpdatedAt = DateTime.UtcNow;
-        entity.UpdatedBy = User.Identity?.Name ?? "Admin";
-        await _context.SaveChangesAsync();
-        TempData["Success"] = "Cập nhật danh mục thành công.";
-        return RedirectToAction(nameof(Index));
+        var category = await _unitOfWork.Categories.GetByIdAsync(id.Value);
+        if (category == null)
+            return NotFound();
+
+        return View(category);
     }
 
     [HttpPost]
-    public async Task<IActionResult> DeleteSelected(List<int> ids)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, Category category)
     {
-        if (ids == null || ids.Count == 0)
-        {
-            return Json(new { success = false, message = "Không có mục nào được chọn." });
-        }
+        if (id != category.Id)
+            return NotFound();
 
-        var items = await _context.Categories.Where(c => ids.Contains(c.Id)).ToListAsync();
-        foreach (var item in items)
+        try
         {
-            item.Status = 3;
-            item.UpdatedAt = DateTime.UtcNow;
-        }
+            if (!ModelState.IsValid)
+                return View(category);
 
-        await _context.SaveChangesAsync();
-        return Json(new { success = true, message = $"Đã xóa mềm {items.Count} danh mục." });
+            category.UpdatedAt = DateTime.UtcNow;
+            _unitOfWork.Categories.Update(category);
+            await _unitOfWork.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index)).WithSuccess("Category updated successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating category");
+            ModelState.AddModelError(string.Empty, "Error updating category");
+            return View(category);
+        }
+    }
+
+    public async Task<IActionResult> Delete(int? id)
+    {
+        if (!id.HasValue)
+            return NotFound();
+
+        var category = await _unitOfWork.Categories.GetByIdAsync(id.Value);
+        if (category == null)
+            return NotFound();
+
+        return View(category);
+    }
+
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        try
+        {
+            var category = await _unitOfWork.Categories.GetByIdAsync(id);
+            if (category != null)
+            {
+                category.Status = 0;
+                _unitOfWork.Categories.Update(category);
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index)).WithSuccess("Category deleted successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting category");
+            return RedirectToAction(nameof(Index)).WithError("Error deleting category");
+        }
     }
 }
