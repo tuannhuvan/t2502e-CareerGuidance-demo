@@ -7,6 +7,8 @@ public class TestResult : BaseEntity
     public int TestId { get; set; }
     public int? RecommendedCareerPathId { get; set; }
     public decimal? CompatibilityScore { get; set; }
+    public int Score { get; set; }
+    public DateTime? CompletedAt { get; set; }
 
     public AppUser Student { get; set; } = null!;
     public AssessmentTest Test { get; set; } = null!;

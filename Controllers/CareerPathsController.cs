@@ -71,4 +71,22 @@ public class CareerPathsController : Controller
             return View(nameof(Index), new List<CareerGuidance.Models.CareerPath>());
         }
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetDetails(int id)
+    {
+        var careerPath = await _careerPathService.GetCareerPathByIdAsync(id);
+        if (careerPath == null)
+            return NotFound();
+
+        var resources = await _careerPathService.GetResourcesAsync(id);
+        var jobs = await _careerPathService.GetJobPostingsAsync(id);
+
+        return Json(new
+        {
+            category = careerPath.Category?.Name,
+            resources = resources.Select(r => new { r.Title, r.ResourceType, r.Url }),
+            jobs = jobs.Select(j => new { j.Title, j.CompanyName, j.Salary, j.Description })
+        });
+    }
 }

@@ -1,0 +1,19 @@
+## .NET build artifacts
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+
+## Publish output
+publish/
+*.publishsettings
+
+## Rider / IDE
+.idea/
+.vs/
+
+## OS
+.DS_Store
+Thumbs.db

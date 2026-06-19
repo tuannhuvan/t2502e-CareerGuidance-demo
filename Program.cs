@@ -1,5 +1,6 @@
 using CareerGuidance.Data;
 using CareerGuidance.Models;
+using CareerGuidance.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +35,9 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
 });
+
+builder.Services.AddScoped<ICareerPathService, CareerPathService>();
+builder.Services.AddScoped<ITestService, TestService>();
 
 builder.Services.AddControllersWithViews();
 
