@@ -54,6 +54,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcQWRtaW5cVmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/06.Works/FPT Aptech/EProject-Sem3/CareerGuidance/Views/CareerPaths/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ2FyZWVyUGF0aHNcRGV0YWlscy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/06.Works/FPT Aptech/EProject-Sem3/CareerGuidance/Views/CareerPaths/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ2FyZWVyUGF0aHNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/06.Works/FPT Aptech/EProject-Sem3/CareerGuidance/Views/Home/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -68,6 +76,22 @@ build_metadata.AdditionalFiles.CssScope =
 
 [D:/06.Works/FPT Aptech/EProject-Sem3/CareerGuidance/Views/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/06.Works/FPT Aptech/EProject-Sem3/CareerGuidance/Views/Tests/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVzdHNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/06.Works/FPT Aptech/EProject-Sem3/CareerGuidance/Views/Tests/MyResults.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVzdHNcTXlSZXN1bHRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/06.Works/FPT Aptech/EProject-Sem3/CareerGuidance/Views/Tests/Results.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVzdHNcUmVzdWx0cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/06.Works/FPT Aptech/EProject-Sem3/CareerGuidance/Views/Tests/Take.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGVzdHNcVGFrZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/06.Works/FPT Aptech/EProject-Sem3/CareerGuidance/Views/_ViewImports.cshtml]
