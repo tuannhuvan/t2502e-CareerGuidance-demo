@@ -1,0 +1,55 @@
+<script>
+    $(function () {
+        if ($('#daterange').length) {
+            $('#daterange').daterangepicker({
+                autoUpdateInput: false,
+                locale: { cancelLabel: 'Clear', format: 'MM/DD/YYYY' }
+            });
+            $('#daterange').on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+            });
+            $('#daterange').on('cancel.daterangepicker', function () {
+                $(this).val('');
+            });
+        }
+    });
+
+    function initBulkDelete(url) {
+        $('#checkAll').click(function () {
+            $('.row-checkbox').prop('checked', this.checked);
+            updateDeleteButton();
+        });
+
+        $('.row-checkbox').click(function () {
+            if (!this.checked) $('#checkAll').prop('checked', false);
+            if ($('.row-checkbox:checked').length === $('.row-checkbox').length) {
+                $('#checkAll').prop('checked', true);
+            }
+            updateDeleteButton();
+        });
+
+        function updateDeleteButton() {
+            var count = $('.row-checkbox:checked').length;
+            $('#selectedCount').text(count);
+            $('#btnDeleteSelected').prop('disabled', count === 0);
+        }
+
+        $('#btnDeleteSelected').click(function () {
+            var ids = $('.row-checkbox:checked').map(function () { return $(this).val(); }).get();
+            if (!ids.length) return;
+            if (!confirm('Xóa ' + ids.length + ' mục đã chọn?')) return;
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                traditional: true,
+                data: { ids: ids },
+                success: function (response) {
+                    alert(response.message);
+                    if (response.success) location.reload();
+                },
+                error: function () { alert('Không thể kết nối máy chủ.'); }
+            });
+        });
+    }
+</script>
