@@ -1,0 +1,93 @@
+@model CareerGuidance.ViewModels.CareerPathFilterViewModel
+@{
+    ViewData["Title"] = "Quản lý lộ trình nghề nghiệp";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Quản lý lộ trình nghề nghiệp</h2>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Thêm mới</a>
+</div>
+
+<form asp-action="Index" method="get" class="row g-3 mb-4 p-3 bg-light border rounded">
+    <div class="col-md-4">
+        <input type="text" name="Keyword" value="@Model.Keyword" class="form-control" placeholder="Tìm theo tiêu đề..." />
+    </div>
+    <div class="col-md-3">
+        <select name="CategoryId" class="form-select">
+            <option value="">Tất cả danh mục</option>
+            @foreach (var cat in Model.CategoryOptions)
+            {
+                <option value="@cat.Id" selected="@(Model.CategoryId == cat.Id)">@cat.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="SortOrder" class="form-select">
+            <option value="title_asc" selected="@(Model.SortOrder == "title_asc")">Tiêu đề (A-Z)</option>
+            <option value="title_desc" selected="@(Model.SortOrder == "title_desc")">Tiêu đề (Z-A)</option>
+            <option value="date_desc" selected="@(Model.SortOrder == "date_desc")">Mới nhất</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
+        <a asp-action="Index" class="btn btn-secondary w-100">Reset</a>
+    </div>
+</form>
+
+<div class="mb-3">
+    <button type="button" id="btnDeleteSelected" class="btn btn-danger" disabled>
+        Xóa đã chọn (<span id="selectedCount">0</span>)
+    </button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+        <tr>
+            <th style="width:40px"><input type="checkbox" id="checkAll" class="form-check-input" /></th>
+            <th>ID</th>
+            <th>Tiêu đề</th>
+            <th>Danh mục</th>
+            <th>Trạng thái</th>
+            <th>Ngày tạo</th>
+            <th style="width:100px">Thao tác</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.CareerPaths)
+        {
+            <tr>
+                <td><input type="checkbox" class="row-checkbox form-check-input" value="@item.Id" /></td>
+                <td>@item.Id</td>
+                <td>@item.Title</td>
+                <td>@item.Category?.Name</td>
+                <td>
+                    @if (item.Status == 1)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">@item.Status</span>
+                    }
+                </td>
+                <td>@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Sửa</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@await Html.PartialAsync("_Pagination", Model.CareerPaths, new ViewDataDictionary(ViewData) {
+    { "Keyword", Model.Keyword }, { "SortOrder", Model.SortOrder }, { "CategoryId", Model.CategoryId }
+})
+
+@section Scripts {
+    <partial name="_AdminListScripts" />
+    <script>
+        initBulkDelete('@Url.Action("DeleteSelected", "CareerPaths", new { area = "Admin" })');
+    </script>
+}

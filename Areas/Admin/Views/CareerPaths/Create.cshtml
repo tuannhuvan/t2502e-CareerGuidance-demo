@@ -1,0 +1,54 @@
+@model CareerGuidance.ViewModels.CareerPathFormViewModel
+@{
+    ViewData["Title"] = "Thêm lộ trình nghề nghiệp";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<form asp-action="Create" method="post" class="card card-body">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="mb-3">
+        <label asp-for="CategoryId" class="form-label">Danh mục</label>
+        <select asp-for="CategoryId" class="form-select" asp-items="@(new SelectList(Model.CategoryOptions, "Id", "Name"))">
+            <option value="">-- Chọn danh mục --</option>
+        </select>
+        <span asp-validation-for="CategoryId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label"></label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Content" class="form-label"></label>
+        <textarea asp-for="Content" id="editor" class="form-control" rows="8"></textarea>
+        <span asp-validation-for="Content" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Status" class="form-label"></label>
+        <select asp-for="Status" class="form-select">
+            <option value="1">Active</option>
+            <option value="2">Draft</option>
+        </select>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-success">Lưu</button>
+        <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js"></script>
+    <script>
+        ClassicEditor.create(document.querySelector('#editor'), {
+            toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', 'insertTable', 'undo', 'redo']
+        }).catch(console.error);
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -46,13 +46,10 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
-            var careerPathId = @Model.Id;
-            loadResources(careerPathId);
-            loadJobs(careerPathId);
+            loadCareerPathDetails(@Model.Id);
         });
 
         function setGoal(careerPathId) {
-            // This will open a modal or navigate to set goal page
             console.log('Setting goal for career path:', careerPathId);
         }
     </script>

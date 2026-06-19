@@ -1,0 +1,87 @@
+@model CareerGuidance.ViewModels.CategoryFilterViewModel
+@{
+    ViewData["Title"] = "Quản lý danh mục";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Quản lý danh mục</h2>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Thêm mới</a>
+</div>
+
+<form asp-action="Index" method="get" class="row g-3 mb-4 p-3 bg-light border rounded">
+    <div class="col-md-4">
+        <input type="text" name="Keyword" value="@Model.Keyword" class="form-control" placeholder="Tìm theo tên..." />
+    </div>
+    <div class="col-md-3">
+        <input type="text" name="DateRange" value="@Model.DateRange" id="daterange" class="form-control" placeholder="Khoảng thời gian" />
+    </div>
+    <div class="col-md-2">
+        <select name="SortOrder" class="form-select">
+            <option value="name_asc" selected="@(Model.SortOrder == "name_asc")">Tên (A-Z)</option>
+            <option value="name_desc" selected="@(Model.SortOrder == "name_desc")">Tên (Z-A)</option>
+            <option value="date_desc" selected="@(Model.SortOrder == "date_desc")">Mới nhất</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
+        <a asp-action="Index" class="btn btn-secondary w-100">Reset</a>
+    </div>
+</form>
+
+<div class="mb-3">
+    <button type="button" id="btnDeleteSelected" class="btn btn-danger" disabled>
+        Xóa đã chọn (<span id="selectedCount">0</span>)
+    </button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+        <tr>
+            <th style="width:40px"><input type="checkbox" id="checkAll" class="form-check-input" /></th>
+            <th>ID</th>
+            <th>Tên danh mục</th>
+            <th>Mô tả</th>
+            <th>Trạng thái</th>
+            <th>Ngày tạo</th>
+            <th style="width:100px">Thao tác</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.Categories)
+        {
+            <tr>
+                <td><input type="checkbox" class="row-checkbox form-check-input" value="@item.Id" /></td>
+                <td>@item.Id</td>
+                <td>@item.Name</td>
+                <td>@item.Description</td>
+                <td>
+                    @if (item.Status == 1)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">@item.Status</span>
+                    }
+                </td>
+                <td>@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Sửa</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@await Html.PartialAsync("_Pagination", Model.Categories, new ViewDataDictionary(ViewData) {
+    { "Keyword", Model.Keyword }, { "DateRange", Model.DateRange }, { "SortOrder", Model.SortOrder }
+})
+
+@section Scripts {
+    <partial name="_AdminListScripts" />
+    <script>
+        initBulkDelete('@Url.Action("DeleteSelected", "Categories", new { area = "Admin" })');
+    </script>
+}
