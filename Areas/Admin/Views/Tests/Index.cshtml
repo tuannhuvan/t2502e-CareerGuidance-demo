@@ -1,95 +1,79 @@
-@model CareerGuidance.ViewModels.TestFilterViewModel
+@model IEnumerable<CareerGuidance.Models.AssessmentTest>
+
 @{
-    ViewData["Title"] = "Quản lý bài test";
+    ViewData["Title"] = "Manage Tests";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Quản lý bài test</h2>
-    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Thêm mới</a>
-</div>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h3 mb-0">Assessment Tests</h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a asp-action="Create" class="btn btn-primary">Create New Test</a>
+        </div>
+    </div>
 
-<form asp-action="Index" method="get" class="row g-3 mb-4 p-3 bg-light border rounded">
-    <div class="col-md-3">
-        <input type="text" name="Keyword" value="@Model.Keyword" class="form-control" placeholder="Tìm theo tiêu đề..." />
-    </div>
-    <div class="col-md-2">
-        <input type="text" name="DateRange" value="@Model.DateRange" id="daterange" class="form-control" placeholder="Khoảng thời gian" />
-    </div>
-    <div class="col-md-2">
-        <select name="Status" class="form-select">
-            <option value="">Tất cả trạng thái</option>
-            <option value="1" selected="@(Model.Status == 1)">Active</option>
-            <option value="2" selected="@(Model.Status == 2)">Draft</option>
-        </select>
-    </div>
-    <div class="col-md-2">
-        <select name="SortOrder" class="form-select">
-            <option value="title_asc" selected="@(Model.SortOrder == "title_asc")">Tiêu đề (A-Z)</option>
-            <option value="title_desc" selected="@(Model.SortOrder == "title_desc")">Tiêu đề (Z-A)</option>
-            <option value="date_desc" selected="@(Model.SortOrder == "date_desc")">Mới nhất</option>
-            <option value="date_asc" selected="@(Model.SortOrder == "date_asc")">Cũ nhất</option>
-        </select>
-    </div>
-    <div class="col-md-3 d-flex gap-2">
-        <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
-        <a asp-action="Index" class="btn btn-secondary w-100">Reset</a>
-    </div>
-</form>
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
-<div class="mb-3">
-    <button type="button" id="btnDeleteSelected" class="btn btn-danger" disabled>
-        Xóa đã chọn (<span id="selectedCount">0</span>)
-    </button>
-</div>
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
-<div class="table-responsive">
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
-        <tr>
-            <th style="width:40px"><input type="checkbox" id="checkAll" class="form-check-input" /></th>
-            <th>ID</th>
-            <th>Tiêu đề</th>
-            <th>Trạng thái</th>
-            <th>Ngày tạo</th>
-            <th style="width:150px">Thao tác</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var item in Model.Tests)
-        {
-            <tr>
-                <td><input type="checkbox" class="row-checkbox form-check-input" value="@item.Id" /></td>
-                <td>@item.Id</td>
-                <td>@item.Title</td>
-                <td>
-                    @switch (item.Status)
+    <div class="card">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var test in Model)
                     {
-                        case 1: <span class="badge bg-success">Active</span>; break;
-                        case 2: <span class="badge bg-warning text-dark">Draft</span>; break;
-                        default: <span class="badge bg-secondary">@item.Status</span>; break;
+                        <tr>
+                            <td>@test.Title</td>
+                            <td>@test.Description</td>
+                            <td>
+                                @if (test.Status == 1)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td>@test.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@test.Id" class="btn btn-sm btn-warning">Edit</a>
+                                <a asp-action="Delete" asp-route-id="@test.Id" class="btn btn-sm btn-danger">Delete</a>
+                            </td>
+                        </tr>
                     }
-                </td>
-                <td>@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Sửa</a>
-                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Xóa bài test này?');">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
-                    </form>
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-4">No tests found</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
-
-@await Html.PartialAsync("_Pagination", Model.Tests, new ViewDataDictionary(ViewData) {
-    { "Keyword", Model.Keyword }, { "DateRange", Model.DateRange }, { "SortOrder", Model.SortOrder }, { "Status", Model.Status }
-})
-
-@section Scripts {
-    <partial name="_AdminListScripts" />
-    <script>
-        initBulkDelete('@Url.Action("DeleteSelected", "Tests", new { area = "Admin" })');
-    </script>
-}
