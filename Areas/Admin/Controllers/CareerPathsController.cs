@@ -1,148 +1,159 @@
+using CareerGuidance.Data;
+using CareerGuidance.Helpers;
 using CareerGuidance.Models;
-using CareerGuidance.Repositories;
-using Microsoft.AspNetCore.Authorization;
+using CareerGuidance.ViewModels;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace CareerGuidance.Areas.Admin.Controllers;
 
-[Area("Admin")]
-[Authorize(Roles = "Admin")]
-public class CareerPathsController : Controller
+public class CareerPathsController : BaseAdminController
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<CareerPathsController> _logger;
+    private readonly AppDbContext _context;
+    private const int PageSize = 10;
 
-    public CareerPathsController(IUnitOfWork unitOfWork, ILogger<CareerPathsController> logger)
+    public CareerPathsController(AppDbContext context)
     {
-        _unitOfWork = unitOfWork;
-        _logger = logger;
+        _context = context;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(CareerPathFilterViewModel filter, int? pageIndex)
     {
-        try
+        var query = _context.CareerPaths
+            .Include(c => c.Category)
+            .Where(c => c.Status != 3);
+
+        if (!string.IsNullOrWhiteSpace(filter.Keyword))
         {
-            var careerPaths = await _unitOfWork.CareerPaths.GetAllAsync();
-            return View(careerPaths);
+            query = query.Where(c =>
+                c.Title.Contains(filter.Keyword) ||
+                (c.Content != null && c.Content.Contains(filter.Keyword)));
         }
-        catch (Exception ex)
+
+        if (filter.CategoryId.HasValue)
         {
-            _logger.LogError(ex, "Error loading career paths");
-            return View(new List<CareerPath>());
+            query = query.Where(c => c.CategoryId == filter.CategoryId.Value);
         }
+
+        query = filter.SortOrder switch
+        {
+            "title_desc" => query.OrderByDescending(c => c.Title),
+            "date_desc" => query.OrderByDescending(c => c.CreatedAt),
+            _ => query.OrderBy(c => c.Title)
+        };
+
+        filter.CategoryOptions = await _context.Categories
+            .Where(c => c.Status == 1)
+            .OrderBy(c => c.Name)
+            .AsNoTracking()
+            .ToListAsync();
+
+        filter.CareerPaths = await PaginatedList<CareerPath>.CreateAsync(query.AsNoTracking(), pageIndex ?? 1, PageSize);
+        return View(filter);
+    }
+
+    private async Task LoadCategoryOptionsAsync(CareerPathFormViewModel model)
+    {
+        model.CategoryOptions = await _context.Categories
+            .Where(c => c.Status == 1)
+            .OrderBy(c => c.Name)
+            .AsNoTracking()
+            .ToListAsync();
     }
 
     public async Task<IActionResult> Create()
     {
-        var categories = await _unitOfWork.Categories.GetAllAsync();
-        ViewBag.Categories = new SelectList(categories, "Id", "Name");
-        return View();
+        var model = new CareerPathFormViewModel();
+        await LoadCategoryOptionsAsync(model);
+        return View(model);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CareerPath careerPath)
+    public async Task<IActionResult> Create(CareerPathFormViewModel model)
     {
-        try
+        if (!ModelState.IsValid)
         {
-            if (!ModelState.IsValid)
-            {
-                var categories = await _unitOfWork.Categories.GetAllAsync();
-                ViewBag.Categories = new SelectList(categories, "Id", "Name", careerPath.CategoryId);
-                return View(careerPath);
-            }
-
-            careerPath.CreatedAt = DateTime.UtcNow;
-            careerPath.Status = 1;
-            await _unitOfWork.CareerPaths.AddAsync(careerPath);
-
-            return RedirectToAction(nameof(Index)).WithSuccess("Career path created successfully");
+            await LoadCategoryOptionsAsync(model);
+            return View(model);
         }
-        catch (Exception ex)
+
+        _context.CareerPaths.Add(new CareerPath
         {
-            _logger.LogError(ex, "Error creating career path");
-            ModelState.AddModelError(string.Empty, "Error creating career path");
-            return View(careerPath);
-        }
+            CategoryId = model.CategoryId,
+            Title = model.Title,
+            Content = model.Content,
+            Status = model.Status,
+            CreatedBy = User.Identity?.Name ?? "Admin"
+        });
+        await _context.SaveChangesAsync();
+        TempData["Success"] = "Thêm lộ trình nghề nghiệp thành công.";
+        return RedirectToAction(nameof(Index));
     }
 
-    public async Task<IActionResult> Edit(int? id)
+    public async Task<IActionResult> Edit(int id)
     {
-        if (!id.HasValue)
+        var entity = await _context.CareerPaths.FindAsync(id);
+        if (entity == null)
+        {
             return NotFound();
+        }
 
-        var careerPath = await _unitOfWork.CareerPaths.GetByIdAsync(id.Value);
-        if (careerPath == null)
-            return NotFound();
-
-        var categories = await _unitOfWork.Categories.GetAllAsync();
-        ViewBag.Categories = new SelectList(categories, "Id", "Name", careerPath.CategoryId);
-        return View(careerPath);
+        var model = new CareerPathFormViewModel
+        {
+            Id = entity.Id,
+            CategoryId = entity.CategoryId,
+            Title = entity.Title,
+            Content = entity.Content,
+            Status = entity.Status
+        };
+        await LoadCategoryOptionsAsync(model);
+        return View(model);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, CareerPath careerPath)
+    public async Task<IActionResult> Edit(CareerPathFormViewModel model)
     {
-        if (id != careerPath.Id)
+        if (!ModelState.IsValid)
+        {
+            await LoadCategoryOptionsAsync(model);
+            return View(model);
+        }
+
+        var entity = await _context.CareerPaths.FindAsync(model.Id);
+        if (entity == null)
+        {
             return NotFound();
-
-        try
-        {
-            if (!ModelState.IsValid)
-            {
-                var categories = await _unitOfWork.Categories.GetAllAsync();
-                ViewBag.Categories = new SelectList(categories, "Id", "Name", careerPath.CategoryId);
-                return View(careerPath);
-            }
-
-            careerPath.UpdatedAt = DateTime.UtcNow;
-            _unitOfWork.CareerPaths.Update(careerPath);
-            await _unitOfWork.SaveChangesAsync();
-
-            return RedirectToAction(nameof(Index)).WithSuccess("Career path updated successfully");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating career path");
-            ModelState.AddModelError(string.Empty, "Error updating career path");
-            return View(careerPath);
-        }
+
+        entity.CategoryId = model.CategoryId;
+        entity.Title = model.Title;
+        entity.Content = model.Content;
+        entity.Status = model.Status;
+        entity.UpdatedAt = DateTime.UtcNow;
+        entity.UpdatedBy = User.Identity?.Name ?? "Admin";
+        await _context.SaveChangesAsync();
+        TempData["Success"] = "Cập nhật lộ trình thành công.";
+        return RedirectToAction(nameof(Index));
     }
 
-    public async Task<IActionResult> Delete(int? id)
+    [HttpPost]
+    public async Task<IActionResult> DeleteSelected(List<int> ids)
     {
-        if (!id.HasValue)
-            return NotFound();
-
-        var careerPath = await _unitOfWork.CareerPaths.GetByIdAsync(id.Value);
-        if (careerPath == null)
-            return NotFound();
-
-        return View(careerPath);
-    }
-
-    [HttpPost, ActionName("Delete")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
-    {
-        try
+        if (ids == null || ids.Count == 0)
         {
-            var careerPath = await _unitOfWork.CareerPaths.GetByIdAsync(id);
-            if (careerPath != null)
-            {
-                careerPath.Status = 0;
-                _unitOfWork.CareerPaths.Update(careerPath);
-                await _unitOfWork.SaveChangesAsync();
-            }
+            return Json(new { success = false, message = "Không có mục nào được chọn." });
+        }
 
-            return RedirectToAction(nameof(Index)).WithSuccess("Career path deleted successfully");
-        }
-        catch (Exception ex)
+        var items = await _context.CareerPaths.Where(c => ids.Contains(c.Id)).ToListAsync();
+        foreach (var item in items)
         {
-            _logger.LogError(ex, "Error deleting career path");
-            return RedirectToAction(nameof(Index)).WithError("Error deleting career path");
+            item.Status = 3;
+            item.UpdatedAt = DateTime.UtcNow;
         }
+
+        await _context.SaveChangesAsync();
+        return Json(new { success = true, message = $"Đã xóa mềm {items.Count} lộ trình." });
     }
 }
